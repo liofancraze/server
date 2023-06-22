@@ -3,46 +3,76 @@ const express = require("express");
 const formidableMiddleware = require("express-formidable");
 const app = express();
 app.use(formidableMiddleware());
-const fcl = require("@onflow/fcl");
-const sdk = require("@onflow/sdk");
 const cors = require("cors");
 app.use(cors());
+const axios = require("axios");
+const { sansPrefix } = require("@onflow/util-address");
 
-fcl.config({
-  "discovery.wallet": "https://fcl-discovery.onflow.org/testnet/authn", // Endpoint set to Testnet
-  "accessNode.api": "https://rest-testnet.onflow.org",
-});
+encodeCustom = (str) => Buffer.from(str).toString("base64");
 
 app.post("/relayVoucher", async (req, res) => {
-  let { envelopeSigs, payloadSigs, computeLimit, cadence } = req.fields;
+  let {
+    cadence,
+    refBlock,
+    computeLimit,
+    arguments,
+    proposalKey,
+    payer,
+    authorizers,
+    payloadSigs,
+    envelopeSigs
+  } = req.fields;
 
-  const proposer = {
-    addr: fcl.sansPrefix(envelopeSigs[0].address),
-    keyId: Number(envelopeSigs[0].keyId),
-    signature: envelopeSigs[0].sig,
+  let payload_signatures = [
+        {
+            address: sansPrefix(payloadSigs[0].address),
+            key_index: String(payloadSigs[0].keyId),
+            signature: payloadSigs[0].sig,
+        }
+    ]
+
+  let envelope_signatures = [
+        {
+          address: sansPrefix(envelopeSigs[0].address),
+          key_index: String(envelopeSigs[0].keyId),
+          signature: envelopeSigs[0].sig,
+        }
+    ]
+
+  proposalKey = {
+    address: sansPrefix(proposalKey.address),
+    key_index: String(proposalKey.keyId),
+    sequence_number: String(proposalKey.sequenceNum),
   };
 
-  const signer = {
-    addr: fcl.sansPrefix(payloadSigs[0].address),
-    keyId: Number(payloadSigs[0].keyId),
-    signature: payloadSigs[0].sig,
+  const payload = {
+    script: encodeCustom(cadence),
+    arguments: [
+      "eyB0eXBlOiAnVUludDY0JywgdmFsdWU6ICcxLjAnIH0=",
+      "eyB0eXBlOiAnQWRkcmVzcycsIHZhbHVlOiAnMHgzMTY2N2FiMzE0Y2FiZWMwJyB9",
+    ],
+    reference_block_id: refBlock,
+    gas_limit: computeLimit.toString(),
+    payer: sansPrefix(payer),
+    proposal_key: proposalKey,
+    authorizers: [sansPrefix(authorizers[0])],
+    payload_signatures,
+    envelope_signatures,
   };
 
-  // building interaction from voucher
-  const builtInteraction = await fcl.build([
-    fcl.transaction(cadence),
-    fcl.limit(computeLimit),
-    fcl.proposer(proposer),
-    fcl.payer(proposer),
-    fcl.authorizations([signer]),
-  ]);
-  console.log("--------------builtInteraction", builtInteraction);
+  console.log( "--------payload", payload);
+  let response;
+  try {
+    response = await axios.post(
+      "https://rest-testnet.onflow.org/v1/transactions",
+      payload
+    );
+  } catch (error) {
+    console.log(error.response.data);
+  }
 
-  //sending interaction to the network
-  const response = await fcl.send([builtInteraction]);
-  const decoded = await fcl.decode(response);
-  console.log("--------------decoded", decoded);
-
+  console.log("response", response);
+  
   if (response) {
     res.status(200).json({ txId: decoded });
   } else {
