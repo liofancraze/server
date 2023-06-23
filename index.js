@@ -48,7 +48,7 @@ app.post("/relayVoucher", async (req, res) => {
   const payload = {
     script: encodeCustom(cadence),
     arguments: [
-      "eyB0eXBlOiAnVUludDY0JywgdmFsdWU6ICcxLjAnIH0=",
+      "eyJ0eXBlIjogIlVGaXg2NCIsICJ2YWx1ZSI6ICIxLjAwMDAwMDAwfQ==",
       "eyB0eXBlOiAnQWRkcmVzcycsIHZhbHVlOiAnMHgzMTY2N2FiMzE0Y2FiZWMwJyB9",
     ],
     reference_block_id: refBlock,
