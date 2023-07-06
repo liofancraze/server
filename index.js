@@ -5,10 +5,6 @@ const app = express();
 app.use(formidableMiddleware());
 const cors = require("cors");
 app.use(cors());
-const axios = require("axios");
-const { sansPrefix } = require("@onflow/util-address");
-
-encodeCustom = (str) => Buffer.from(str).toString("base64");
 
 app.post("/relayVoucher", async (req, res) => {
   let {
