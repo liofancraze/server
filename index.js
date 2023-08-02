@@ -7,14 +7,12 @@ const cors = require("cors");
 app.use(cors());
 
 app.post("/relayVoucher", async (req, res) => {
-  let {
-    txHash
-  } = req.fields;
+  let { txId } = req.fields;
 
-  console.log("------txHash------", txHash);
-  
-  if (txHash) {
-    res.status(200).json({ txHash });
+  console.log("------txId------", txId);
+
+  if (txId) {
+    res.status(200).json({ txId });
   } else {
     res.status(400).json({ message: "Data not found" });
   }
